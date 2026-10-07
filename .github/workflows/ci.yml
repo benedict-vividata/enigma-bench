@@ -1,0 +1,45 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  enigma-bench:
+    name: Enigma Bench (ruff + pytest)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+          cache-dependency-glob: uv.lock
+
+      # The lockfile points x86_64 Linux at PyTorch's CUDA 12.9 index, which is
+      # right for the benchmark host and ~3 GB of wheels the runner does not
+      # need. Install the CPU build first and tell sync to leave it alone; the
+      # whole suite runs on CPU.
+      - name: Install CPU PyTorch
+        run: |
+          uv venv
+          uv pip install --index-url https://download.pytorch.org/whl/cpu torch
+
+      - name: Sync
+        run: uv sync --frozen --inexact --no-install-package torch
+
+      - name: Ruff lint
+        run: uv run ruff check .
+
+      - name: Ruff format
+        run: uv run ruff format --check .
+
+      - name: Tests
+        run: uv run pytest
+
+      - name: Enigma known-answer vectors
+        run: uv run enigma-bench selftest

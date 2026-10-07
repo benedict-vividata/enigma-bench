@@ -1,0 +1,26 @@
+# Egress allowlist for the benchmark container.
+#
+# init-firewall.sh resolves each name and installs the resulting addresses into
+# an ipset; everything else outbound is dropped. The task itself is offline —
+# these entries exist only so the coding agent can reach its own model provider
+# and so the run stays observable.
+#
+# Blank lines and #-comments are ignored. Keep this list minimal: every entry
+# is a channel the agent under test could use to fetch outside help.
+
+# --- Claude Code (Anthropic) ---
+api.anthropic.com          # model requests
+claude.ai                  # claude.ai account authentication
+claude.com                 # sign-in redirect target
+platform.claude.com        # OAuth token exchange and refresh
+
+# --- Codex (OpenAI) ---
+api.openai.com             # model requests
+chatgpt.com                # ChatGPT-plan sign-in and backend
+auth.openai.com            # OAuth device-code and browser flows
+
+# Deliberately absent, and why:
+#   registry.npmjs.org, pypi.org, github.com  - the agent must not install code
+#   huggingface.co                            - the agent must not fetch weights
+#   downloads.claude.ai, storage.googleapis.com - auto-update is disabled
+#   the Datadog telemetry intakes             - CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC=1

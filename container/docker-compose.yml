@@ -1,0 +1,70 @@
+# Enigma Bench runner.
+#
+#   cd enigma-bench && ./bench.sh build && ./bench.sh run
+#
+# Requires Docker with the NVIDIA Container Toolkit on an x86_64 host with an
+# NVIDIA GPU. Everything else — CUDA, Python, the corpus — is in the image.
+name: enigma-bench
+
+services:
+  bench:
+    build:
+      context: ..
+      dockerfile: container/Dockerfile
+      args:
+        CLAUDE_CODE_VERSION: ${CLAUDE_CODE_VERSION:-latest}
+        CODEX_VERSION: ${CODEX_VERSION:-latest}
+        CORPUS_SOURCE: ${CORPUS_SOURCE:-hf:Salesforce/wikitext:wikitext-103-raw-v1}
+        CORPUS_TRAIN_MIB: ${CORPUS_TRAIN_MIB:-96}
+    image: enigma-bench:${ENIGMA_BENCH_TAG:-latest}
+    init: true
+
+    # The egress firewall runs inside the container, so it needs to manage its
+    # own netfilter tables. It cannot reach the host's.
+    cap_add:
+      - NET_ADMIN
+      - NET_RAW
+
+    environment:
+      ENIGMA_BENCH_AGENT: ${ENIGMA_BENCH_AGENT:-claude}
+      ENIGMA_BENCH_MODEL: ${ENIGMA_BENCH_MODEL:-${ENIGMA_BENCH_CODEX_MODEL:-gpt-5.6-luna}}
+      ENIGMA_BENCH_CODEX_MODEL: ${ENIGMA_BENCH_CODEX_MODEL:-gpt-5.6-luna}
+      ENIGMA_BENCH_EFFORT: ${ENIGMA_BENCH_EFFORT:-}
+      ENIGMA_BENCH_HOURS: ${ENIGMA_BENCH_HOURS:-6}
+      ENIGMA_BENCH_SIZE: ${ENIGMA_BENCH_SIZE:-large}
+      ENIGMA_BENCH_MAX_EVALUATIONS: ${ENIGMA_BENCH_MAX_EVALUATIONS:-100}
+      ENIGMA_BENCH_EVAL_SEED: ${ENIGMA_BENCH_EVAL_SEED:-20260820}
+      ENIGMA_BENCH_PREVIEW: ${ENIGMA_BENCH_PREVIEW:-1}
+      ENIGMA_BENCH_FIREWALL: ${ENIGMA_BENCH_FIREWALL:-1}
+      # Subscription auth. Claude may use the token below. The CLI homes are
+      # persisted so refreshed credentials survive, then stripped back to only
+      # their credential files at the start of every benchmark run.
+      CLAUDE_CODE_OAUTH_TOKEN: ${CLAUDE_CODE_OAUTH_TOKEN:-}
+      CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC: "1"
+      DISABLE_AUTOUPDATER: "1"
+
+    volumes:
+      # The audit trail lands on the host as the run proceeds.
+      - ${ENIGMA_BENCH_OUT:-../out}/runs:/srv/enigma-bench/runs
+      - ${ENIGMA_BENCH_OUT:-../out}/submissions:/srv/enigma-bench/submissions
+      - ${ENIGMA_BENCH_OUT:-../out}/transcripts:/srv/enigma-bench/out
+      # These volumes retain auth.json/.credentials.json across containers.
+      # Entrant state written alongside them is removed before every run.
+      - codex-home:/home/agent/.codex
+      - claude-home:/home/agent/.claude
+
+    # Dataloader workers share memory through /dev/shm; Docker's 64 MB default
+    # is far too small.
+    shm_size: "8gb"
+
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+
+volumes:
+  codex-home:
+  claude-home:

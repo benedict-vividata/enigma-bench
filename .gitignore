@@ -1,0 +1,18 @@
+# Corpus artefacts are large (~100 MiB) and reproducible from scripts/fetch_corpus.py.
+corpus/*
+!corpus/.gitkeep
+
+# Local benchmark output: run logs, checkpoints, reports.
+out/
+runs/
+*.pt
+*.safetensors
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+.pytest_cache/
+.ruff_cache/
+.coverage
+htmlcov/

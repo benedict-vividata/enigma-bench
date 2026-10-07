@@ -1,0 +1,20 @@
+#!/usr/bin/env bash
+#
+# The operator's way into the harness as the `bench` user, for smoke tests and
+# post-run analysis:
+#
+#     docker compose exec bench /opt/enigma-bench/bin/entrypoint.sh score runs --verify
+#
+# Deliberately NOT in /etc/sudoers.d/enigma-bench: unlike the MCP wrapper this
+# exposes the whole CLI, including `sample --split test`, which prints held-out
+# plaintext. Only root (i.e. `docker exec`) reaches it.
+set -euo pipefail
+
+if [[ -r /srv/enigma-bench/env ]]; then
+    set -a
+    # shellcheck disable=SC1091
+    source /srv/enigma-bench/env
+    set +a
+fi
+
+exec /opt/enigma-bench/.venv/bin/enigma-bench "$@"

@@ -1,0 +1,9 @@
+{
+  "mcpServers": {
+    "enigma-bench": {
+      "command": "sudo",
+      "args": ["-n", "-u", "bench", "/opt/enigma-bench/bin/enigma-bench-mcp"],
+      "env": {}
+    }
+  }
+}

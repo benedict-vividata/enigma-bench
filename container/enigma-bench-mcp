@@ -1,0 +1,24 @@
+#!/usr/bin/env bash
+#
+# The MCP server, as the agent invokes it.
+#
+# Registered in /workspace/.mcp.json (Claude Code) and ~/.codex/config.toml
+# (Codex) as `sudo -n -u bench /opt/enigma-bench/bin/enigma-bench-mcp`. This
+# file is root-owned and world-unwritable, which is what makes the sudoers rule
+# safe: it hands the agent this one program as `bench`, not a shell.
+#
+# Running as `bench` is what lets the scorer read the held-out corpus split and
+# append to the run log while the agent cannot touch either.
+set -euo pipefail
+
+# Environment written by entrypoint.sh. sudo scrubs the environment, so the
+# deadline and paths have to come from disk rather than from exported variables.
+if [[ -r /srv/enigma-bench/env ]]; then
+    set -a
+    # shellcheck disable=SC1091
+    source /srv/enigma-bench/env
+    set +a
+fi
+
+export ENIGMA_BENCH_HOME="${ENIGMA_BENCH_HOME:-/srv/enigma-bench}"
+exec /opt/enigma-bench/.venv/bin/enigma-bench-mcp "$@"

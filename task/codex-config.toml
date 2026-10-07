@@ -1,0 +1,15 @@
+# Codex configuration for the benchmark container, installed to
+# ~/.codex/config.toml. Auth (auth.json) is mounted separately so this file
+# survives; see container/README.md.
+
+approval_policy = "never"
+sandbox_mode = "danger-full-access"
+model_reasoning_effort = "medium"
+
+# The scorer runs as a different user than the agent, so the held-out corpus and
+# the run log stay out of reach. See container/enigma-bench-mcp.
+[mcp_servers.enigma_bench]
+command = "sudo"
+args = ["-n", "-u", "bench", "/opt/enigma-bench/bin/enigma-bench-mcp"]
+startup_timeout_sec = 60
+tool_timeout_sec = 1800
